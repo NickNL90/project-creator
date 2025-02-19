@@ -3,12 +3,8 @@ import sys
 import subprocess
 
 def create_project(project_name):
-    """Maakt een nieuwe projectmap, installeert venv, activeert en upgrade pip, en zet een git-repo op."""
+    """Maakt een nieuwe projectmap, installeert venv, activeert en upgrade pip, en zet een private git-repo op."""
     print("🚀 Script gestart!")
-
-    if not project_name:
-        print("❌ Geen projectnaam opgegeven. Gebruik: project <projectnaam>")
-        sys.exit(1)
 
     print(f"📌 Projectnaam: {project_name}")
 
@@ -54,11 +50,12 @@ def create_project(project_name):
     except Exception as e:
         print(f"❌ Fout bij updaten van pip: {e}")
 
-    # Stap 5: Maak een git-repo aan
-    print("📂 Initialiseren van Git-repository...")
+    # Stap 5: Maak een git-repo aan en zet deze op privé
+    print("📂 Initialiseren van private Git-repository...")
     try:
         subprocess.run(["git", "init"], check=True)
-        print("✅ Git-repository aangemaakt!")
+        subprocess.run(["git", "branch", "-M", "main"], check=True)
+        print("✅ Private Git-repository aangemaakt!")
     except Exception as e:
         print(f"❌ Fout bij git init: {e}")
 
@@ -79,40 +76,51 @@ __pycache__/
     except Exception as e:
         print(f"❌ Fout bij aanmaken .gitignore: {e}")
 
-    # Stap 7: Maak README.md aan
+    # Stap 7: Maak README.md en requirements.txt aan
     readme_path = os.path.join(project_path, "README.md")
-    print("📜 README.md wordt aangemaakt...")
+    print("📜 README.md en requirements.txt worden aangemaakt...")
 
     readme_content = f"""# {project_name}
 
 ## Beschrijving
 Dit is het {project_name}-project, automatisch gegenereerd met een Python-script.
-
-## Setup
-1. Activeer de virtual environment:
-   ```bash
-   source venv/bin/activate  # macOS/Linux
-   venv\\Scripts\\activate  # Windows
-   ```
-2. Installeer dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
 """
     try:
         with open(readme_path, "w") as f:
             f.write(readme_content)
-        print("✅ README.md aangemaakt!")
+        with open(os.path.join(project_path, "requirements.txt"), "w") as f:
+            f.write("")
+        print("✅ README.md en requirements.txt aangemaakt!")
     except Exception as e:
-        print(f"❌ Fout bij aanmaken README.md: {e}")
+        print(f"❌ Fout bij aanmaken README.md of requirements.txt: {e}")
 
     print("\n🎉 Project is succesvol aangemaakt! 🚀")
 
-# Controleer of de gebruiker een projectnaam heeft opgegeven
-if len(sys.argv) < 2:
-    print("❌ Gebruik: project <projectnaam>")
-    sys.exit(1)
+def setup_alias():
+    """Voegt de alias toe aan .zshrc of .bashrc zodat 'python project' direct gebruikt kan worden."""
+    home = os.path.expanduser("~")
+    shell_config = os.path.join(home, ".zshrc") if os.path.exists(os.path.join(home, ".zshrc")) else os.path.join(home, ".bashrc")
+    alias_command = 'alias project="python3 ~/project-creator/create_project.py"'
 
-# Haal de projectnaam op en voer het script uit
-project_name = sys.argv[1]
-create_project(project_name)
+    try:
+        with open(shell_config, "r") as file:
+            if alias_command in file.read():
+                return
+    except FileNotFoundError:
+        return
+
+    try:
+        with open(shell_config, "a") as file:
+            file.write(f"\n{alias_command}\n")
+        subprocess.run(f"source {shell_config}", shell=True)
+    except Exception as e:
+        print(f"❌ Fout bij toevoegen alias: {e}")
+
+if __name__ == "__main__":
+    setup_alias()
+    if len(sys.argv) < 2:
+        print("❌ Gebruik: python project <projectnaam> om een nieuw project te maken.")
+        sys.exit(1)
+    else:
+        project_name = sys.argv[1]
+        create_project(project_name)
