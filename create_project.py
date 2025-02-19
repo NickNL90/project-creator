@@ -2,8 +2,39 @@ import os
 import sys
 import subprocess
 
+def ensure_code_in_path():
+    """Controleert of het `code`-commando beschikbaar is en voegt het toe aan PATH indien nodig."""
+    try:
+        subprocess.run(["which", "code"], check=True, capture_output=True)
+        print("✅ VS Code 'code' command is beschikbaar!")
+    except subprocess.CalledProcessError:
+        print("⚠️ VS Code 'code' command is niet gevonden. Probeer het automatisch toe te voegen...")
+        try:
+            subprocess.run(["osascript", "-e", 'tell application "Visual Studio Code" to activate'], check=True)
+            subprocess.run(["osascript", "-e", 'tell application "System Events" to keystroke "p" using {command down, shift down}'], check=True)
+            subprocess.run(["osascript", "-e", 'tell application "System Events" to keystroke "Shell Command: Install \"code\" command in PATH" & return'], check=True)
+            subprocess.run("source ~/.zshrc || source ~/.bashrc", shell=True, check=True)
+            print("✅ VS Code 'code' command is succesvol toegevoegd aan PATH! Herstart de terminal als het niet direct werkt.")
+        except Exception as e:
+            print(f"❌ Kon 'code' niet automatisch toevoegen aan PATH: {e}")
+            print("🔹 Open VS Code en voer handmatig uit: 'Shell Command: Install \"code\" command in PATH'")
+
+def open_vs_code(project_path):
+    """Probeert VS Code te openen met de projectmap."""
+    print("🚀 VS Code wordt geopend met de projectmap...")
+    try:
+        subprocess.run(["code", project_path], check=True)
+    except FileNotFoundError:
+        print("⚠️ 'code' command niet gevonden. Probeer absolute VS Code-pad te gebruiken...")
+        vs_code_path = "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
+        if os.path.exists(vs_code_path):
+            subprocess.run([vs_code_path, project_path])
+            print("✅ VS Code geopend via absolute pad!")
+        else:
+            print("❌ VS Code kon niet worden geopend. Zorg ervoor dat VS Code correct is geïnstalleerd.")
+
 def create_project(project_name):
-    """Maakt een nieuwe projectmap, installeert venv, activeert en upgrade pip, en zet een private git-repo op."""
+    """Maakt een nieuwe projectmap, installeert venv, activeert en upgrade pip, zet een private git-repo op en opent VS Code."""
     print("🚀 Script gestart!")
 
     print(f"📌 Projectnaam: {project_name}")
@@ -59,9 +90,9 @@ def create_project(project_name):
     except Exception as e:
         print(f"❌ Fout bij git init: {e}")
 
-    # Stap 6: Maak .gitignore aan
+    # Stap 6: Maak .gitignore aan in de hoofdmap, niet in venv
     gitignore_path = os.path.join(project_path, ".gitignore")
-    print("📄 .gitignore wordt aangemaakt...")
+    print("📄 .gitignore wordt aangemaakt in de hoofdmap...")
 
     gitignore_content = """# Virtual environment
 venv/
@@ -72,7 +103,7 @@ __pycache__/
     try:
         with open(gitignore_path, "w") as f:
             f.write(gitignore_content)
-        print("✅ .gitignore aangemaakt!")
+        print("✅ .gitignore aangemaakt in de hoofdmap!")
     except Exception as e:
         print(f"❌ Fout bij aanmaken .gitignore: {e}")
 
@@ -94,33 +125,15 @@ Dit is het {project_name}-project, automatisch gegenereerd met een Python-script
     except Exception as e:
         print(f"❌ Fout bij aanmaken README.md of requirements.txt: {e}")
 
-    print("\n🎉 Project is succesvol aangemaakt! 🚀")
+    # Stap 8: Open project in VS Code
+    ensure_code_in_path()
+    open_vs_code(project_path)
 
-def setup_alias():
-    """Voegt de alias toe aan .zshrc of .bashrc zodat 'python project' direct gebruikt kan worden."""
-    home = os.path.expanduser("~")
-    shell_config = os.path.join(home, ".zshrc") if os.path.exists(os.path.join(home, ".zshrc")) else os.path.join(home, ".bashrc")
-    alias_command = 'alias project="python3 ~/project-creator/create_project.py"'
-
-    try:
-        with open(shell_config, "r") as file:
-            if alias_command in file.read():
-                print("✅ Alias is geïnstalleerd, create your project with 'python project <your projectname>'")
-                return
-    except FileNotFoundError:
-        return
-
-    try:
-        with open(shell_config, "a") as file:
-            file.write(f"\n{alias_command}\n")
-        subprocess.run(f"source {shell_config}", shell=True)
-        print("✅ Python projects can be made with 'python project <your projectname>'")
-    except Exception as e:
-        print(f"❌ Fout bij toevoegen alias: {e}")
+    print("\n🎉 Project is succesvol aangemaakt en de virtual environment is geactiveerd! 🚀")
 
 if __name__ == "__main__":
-    setup_alias()
     if len(sys.argv) < 2:
+        print("❌ Gebruik: pyproject <projectnaam> om een nieuw project te maken.")
         sys.exit(1)
     else:
         project_name = sys.argv[1]
