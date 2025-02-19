@@ -121,7 +121,6 @@ def setup_alias():
 if __name__ == "__main__":
     setup_alias()
     if len(sys.argv) < 2:
-        print("❌ Gebruik: python project <projectnaam> om een nieuw project te maken.")
         sys.exit(1)
     else:
         project_name = sys.argv[1]
