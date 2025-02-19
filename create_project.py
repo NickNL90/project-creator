@@ -105,6 +105,7 @@ def setup_alias():
     try:
         with open(shell_config, "r") as file:
             if alias_command in file.read():
+                print("✅ Alias is geïnstalleerd, create your project with 'python project <your projectname>'")
                 return
     except FileNotFoundError:
         return
@@ -113,6 +114,7 @@ def setup_alias():
         with open(shell_config, "a") as file:
             file.write(f"\n{alias_command}\n")
         subprocess.run(f"source {shell_config}", shell=True)
+        print("✅ Python projects can be made with 'python project <your projectname>'")
     except Exception as e:
         print(f"❌ Fout bij toevoegen alias: {e}")
 
