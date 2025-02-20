@@ -33,9 +33,31 @@ def setup_vscode_settings(project_path, venv_path):
     python_path = os.path.join(venv_path, "bin", "python") if os.path.exists(os.path.join(venv_path, "bin", "python")) else sys.executable
 
     settings_json_content = {
-        "python.defaultInterpreterPath": python_path,
-        "python.terminal.activateEnvironment": True
-    }
+    "python.defaultInterpreterPath": python_path,
+    "python.terminal.activateEnvironment": True,
+
+    "terminal.integrated.profiles.osx": {
+        "PythonVenv": {
+            "path": "zsh",
+            "args": ["-i", "-c", "source .venv/bin/activate; exec zsh"]
+        }
+    },
+    "terminal.integrated.profiles.linux": {
+        "PythonVenv": {
+            "path": "bash",
+            "args": ["-i", "-c", "source .venv/bin/activate; exec bash"]
+        }
+    },
+    "terminal.integrated.profiles.windows": {
+        "PythonVenv": {
+            "path": "cmd.exe",
+            "args": ["/k", ".venv\\Scripts\\activate"]
+        }
+    },
+    "terminal.integrated.defaultProfile.osx": "PythonVenv",
+    "terminal.integrated.defaultProfile.linux": "PythonVenv",
+    "terminal.integrated.defaultProfile.windows": "PythonVenv"
+}
 
     try:
         with open(settings_json_path, "w") as settings_json_file:
